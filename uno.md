@@ -8,7 +8,13 @@ f(x) &= x^2 + 2x \\
 $$
 $$
 \begin{pmatrix}
+1 & 2 & 5\\
+3 & 4 & 6
+\end{pmatrix} 
+\begin{vmatrix} 
 1 & 2 \\
 3 & 4
-\end{pmatrix}
+\end{vmatrix}
+
+
 $$
