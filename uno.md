@@ -1,4 +1,4 @@
-$H_2o = OH^- + H^+$
+$$H_2o = OH^- + H^+$$
 
 $$
 \begin{align*}
