@@ -1,0 +1,21 @@
+# 忽略 .obsidian文件夹下的所有内容
+.obsidian/
+
+.trash/
+
+# windows缓存
+Thumbs.db
+
+# macos缓存
+.DS_Store
+
+#linux缓存
+.directory
+
+node_moudles/
+
+.obsidian-git-log.txt
+
+# 临时缓存
+*.swp
+
