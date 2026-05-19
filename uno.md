@@ -7,6 +7,8 @@
 
 using namespace std;
 
+// 日期类
+
 class Date {
 
 private:
@@ -17,19 +19,31 @@ private:
 
     int day;
 
+  
+
 public:
 
-    Date(int y = 1, int m = 1, int d = 1) : year(y), month(m), day(d) {}
+    Date(int y = 1, int m = 1, int d = 1){
 
-  
+        if(y==1582 && m==10 && d>=5 && d<=14){ // 1582年10月5-14日不存在，直接跳到10月15日
 
-    void SetYear(int y) { year = y; }
+            year = 1582;
 
-    void SetMonth(int m) { month = m; }
+            month = 10;
 
-    void SetDay(int d) { day = d; }
+            day = d + 10;
 
-  
+        } else {
+
+            year = y;
+
+            month = m;
+
+            day = d;
+
+        }
+
+    }
 
     int GetYear() const { return year; }
 
@@ -39,23 +53,7 @@ public:
 
   
 
-    Date operator+(int days);
-
-    Date operator-(int days);
-
-    bool operator<(const Date &other) const;
-
-    bool operator<=(const Date &other) const;
-
-    bool operator>(const Date &other) const;
-
-  
-
-    static bool IsLeapYear(int y, bool gregorian);
-
-    static int GetYearDays(int y, bool gregorian);
-
-    static int GetMonthDays(const Date &d);
+    static int GetMonthDays(int year,int month);
 
     static int DateToNum(const Date &d);
 
@@ -63,115 +61,88 @@ public:
 
     static int Week(const Date &d);
 
-  
+    Date operator+(int days) const;
 
-    // 判断日期是否在格里高利历时期（1582-10-15及之后）
+    Date operator-(int days) const;
 
-    static bool IsGregorian(const Date &d);
+    bool operator<(const Date &other) const;
+
+    bool operator<=(const Date &other) const;
+
+    bool operator>(const Date &other) const;
 
 };
 
   
 
-// 格里高利历改革分界点：1582-10-15（儒略历1582-10-04之后直接跳到格里高利历1582-10-15）
+// 平润年判断函数
 
-bool Date::IsGregorian(const Date &d) {
+bool IsLeapYear(int y) {
 
-    if (d.year > 1582) return true;
-
-    if (d.year < 1582) return false;
-
-    if (d.month > 10) return true;
-
-    if (d.month < 10) return false;
-
-    return d.day >= 15;
-
-}
-
-  
-
-bool Date::IsLeapYear(int y, bool gregorian) {
-
-    if (gregorian) {
+    if (y > 1582)
 
         return (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0);
 
-    } else {
+    else
 
         return y % 4 == 0;
 
-    }
-
 }
 
   
+  
 
-int Date::GetYearDays(int y, bool gregorian) {
+// 获取具体年份天数函数
+
+int GetYearDays(int y) {
 
     if (y == 1582) return 355;
 
-    return IsLeapYear(y, gregorian) ? 366 : 365;
+    return IsLeapYear(y) ? 366 : 365;
 
 }
 
   
 
-int Date::GetMonthDays(const Date &d) {
+// 获取具体月份天数函数
 
-    if (d.year == 1582 && d.month == 10) return 21;
+int Date::GetMonthDays(int year,int month) {
+
+    if (year == 1582 && month == 10) return 21;
 
     int days[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-    int m = d.month;
+    if (month == 2) {
 
-    if (m == 2) {
-
-        // 1582年及之前月份使用儒略历，1582年10月之后使用格里高利历
-
-        bool greg = (d.year > 1582) || (d.year == 1582 && d.month > 10);
-
-        return IsLeapYear(d.year, greg) ? 29 : 28;
+        return IsLeapYear(year) ? 29 : 28;
 
     }
 
-    return days[m];
+    return days[month];
 
 }
 
   
+
+// 日期转换为天数函数
 
 int Date::DateToNum(const Date &d) {
 
     int num = 0;
 
-    // 累计完整年份的天数
+    // 计算完整年的天数
 
     for (int y = 1; y < d.year; y++) {
 
-        if (y < 1582) {
-
-            num += GetYearDays(y, false);  // 儒略历
-
-        } else if (y == 1582) {
-
-            num += 355;                    // 1582年删除10天
-
-        } else {
-
-            num += GetYearDays(y, true);   // 格里高利历
-
-        }
+        num += GetYearDays(y);        
 
     }
 
-    // 累计当前年份中完整月份的天数
+    // 计算完整月的天数
 
     for (int m = 1; m < d.month; m++) {
 
-        Date temp(d.year, m, 1);
-
-        num += GetMonthDays(temp);
+        num += GetMonthDays(d.year, m);
 
     }
 
@@ -197,25 +168,9 @@ Date Date::NumToDate(int n) {
 
     int year = 1;
 
-    // 按年份递减，根据年份选用合适的历法
-
     while (true) {
 
-        int yearDays;
-
-        if (year < 1582) {
-
-            yearDays = GetYearDays(year, false);
-
-        } else if (year == 1582) {
-
-            yearDays = 355;
-
-        } else {
-
-            yearDays = GetYearDays(year, true);
-
-        }
+        int yearDays = GetYearDays(year);
 
         if (n <= yearDays) break;
 
@@ -229,9 +184,7 @@ Date Date::NumToDate(int n) {
 
     while (true) {
 
-        Date temp(year, month, 1);
-
-        int monthDays = GetMonthDays(temp);
+        int monthDays = GetMonthDays(year,month);
 
         if (n <= monthDays) break;
 
@@ -263,7 +216,7 @@ int Date::Week(const Date &d) {
 
   
 
-Date Date::operator+(int days) {
+Date Date::operator+(int days) const {
 
     int total = DateToNum(*this) + days;
 
@@ -273,7 +226,7 @@ Date Date::operator+(int days) {
 
   
 
-Date Date::operator-(int days) {
+Date Date::operator-(int days) const {
 
     int total = DateToNum(*this) - days;
 
@@ -283,7 +236,7 @@ Date Date::operator-(int days) {
 
   
 
-bool Date::operator<(const Date &other) const {
+bool Date::operator<(const Date &other) const { // a < b
 
     if (year != other.year) return year < other.year;
 
@@ -295,7 +248,7 @@ bool Date::operator<(const Date &other) const {
 
   
 
-bool Date::operator<=(const Date &other) const {
+bool Date::operator<=(const Date &other) const { // b < a 的逆是 a <= b
 
     return !(other < *this);
 
@@ -303,7 +256,7 @@ bool Date::operator<=(const Date &other) const {
 
   
 
-bool Date::operator>(const Date &other) const {
+bool Date::operator>(const Date &other) const { // b < a 等价于 a > b
 
     return other < *this;
 
@@ -343,7 +296,7 @@ void PrintCalendar(int year) {
 
         int startWeek = Date::Week(firstDay);
 
-        int monthDays = Date::GetMonthDays(firstDay);
+        int monthDays = Date::GetMonthDays(year,month);
 
   
 
@@ -357,7 +310,7 @@ void PrintCalendar(int year) {
 
             int displayDay = day;
 
-            if (year == 1582 && month == 10 && day > 4) {
+            if (year == 1582 && month == 10 && day > 4) { // 格里高利历1582年10月4日开始跳过10天
 
                 displayDay = day + 10;
 
@@ -395,17 +348,167 @@ int main() {
 
     system("chcp 65001");
 
-    int year;
+  
 
-    cout << "输入年份:";
+    const string weekdays[] = {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"};
 
-    cin >> year;
+  
 
-    PrintCalendar(year);
+    while (true) {
 
-    cout << "请按任意键继续..." << endl;
+        cout << "\n========== 日历功能菜单 ==========" << endl;
 
-    system("pause");
+        cout << "1. 打印年历" << endl;
+
+        cout << "2. 查询某天是星期几" << endl;
+
+        cout << "3. 计算 N 天后的日期" << endl;
+
+        cout << "4. 计算 N 天前的日期" << endl;
+
+        cout << "5. 计算两个日期相差天数" << endl;
+
+        cout << "0. 退出" << endl;
+
+        cout << "请选择: ";
+
+  
+
+        int choice;
+
+        cin >> choice;
+
+  
+
+        if (choice == 0) break;
+
+  
+
+        int y, m, d, n;
+
+        switch (choice) {
+
+        case 1: {
+
+            cout << "输入年份: ";
+
+            cin >> y;
+
+            PrintCalendar(y);
+
+            system("pause");
+
+            break;
+
+        }
+
+        case 2: {
+
+            cout << "输入日期(年 月 日): ";
+
+            cin >> y >> m >> d;
+
+            Date date(y, m, d);
+
+            cout << y << "-" << m << "-" << d << " 是 "
+
+                 << weekdays[Date::Week(date)] << endl;
+
+            system("pause");
+
+            break;
+
+        }
+
+        case 3: {
+
+            cout << "输入日期(年 月 日): ";
+
+            cin >> y >> m >> d;
+
+            cout << "输入天数: ";
+
+            cin >> n;
+
+            Date date(y, m, d);
+
+            Date result = date + n;    
+
+            cout << y << "-" << m << "-" << d << " + " << n << " 天 = "
+
+                 << result.GetYear() << "-" << result.GetMonth() << "-" << result.GetDay() << endl;
+
+            system("pause");
+
+            break;
+
+        }
+
+        case 4: {
+
+            cout << "输入日期(年 月 日): ";
+
+            cin >> y >> m >> d;
+
+            cout << "输入天数: ";
+
+            cin >> n;
+
+            Date date(y, m, d);
+
+            Date result = date - n;    
+
+            cout << y << "-" << m << "-" << d << " - " << n << " 天 = "
+
+                 << result.GetYear() << "-" << result.GetMonth() << "-" << result.GetDay() << endl;
+
+            system("pause");
+
+            break;
+
+        }
+
+        case 5: {
+
+            cout << "输入第一个日期(年 月 日): ";
+
+            cin >> y >> m >> d;
+
+            Date d1(y, m, d);
+
+            cout << "输入第二个日期(年 月 日): ";
+
+            cin >> y >> m >> d;
+
+            Date d2(y, m, d);
+
+  
+
+            if (d2 < d1) swap(d1, d2);
+
+  
+
+            int diff = Date::DateToNum(d2) - Date::DateToNum(d1);
+
+            cout << "相差 " << diff << " 天" << endl;
+
+            system("pause");
+
+            break;
+
+        }
+
+        default:
+
+            cout << "无效选择，请重试" << endl;
+
+            system("pause");
+
+        }
+
+    }
+
+  
 
     return 0;
 
